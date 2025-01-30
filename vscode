@@ -1,0 +1,122 @@
+[
+    {
+        "ID": "Rule1",
+        "Name": "Enforce Star Schema Design",
+        "Description": "Ensure the model follows a star schema design with fact and dimension tables.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "if (Model.Tables.Count(t => t.IsHidden && t.Columns.Any(c => c.IsKey)) > 0) { Warning(\"Hidden tables with key columns detected. Ensure the model follows a star schema design.\"); }"
+    },
+    {
+        "ID": "Rule2",
+        "Name": "Validate Table and Column Naming",
+        "Description": "Ensure table and column names are clear, consistent, and do not contain spaces or special characters.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { if (table.Name.Contains(\" \") || table.Name.Any(c => !char.IsLetterOrDigit(c) && c != '_')) { Warning($\"Table '{table.Name}' contains spaces or special characters. Use underscores or camelCase.\"); } foreach (var column in table.Columns) { if (column.Name.Contains(\" \") || column.Name.Any(c => !char.IsLetterOrDigit(c) && c != '_')) { Warning($\"Column '{column.Name}' in table '{table.Name}' contains spaces or special characters. Use underscores or camelCase.\"); } } }"
+    },
+    {
+        "ID": "Rule3",
+        "Name": "Check for Missing Descriptions",
+        "Description": "Ensure all tables and columns have descriptions for better documentation.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { if (string.IsNullOrEmpty(table.Description)) { Warning($\"Table '{table.Name}' is missing a description.\"); } foreach (var column in table.Columns) { if (string.IsNullOrEmpty(column.Description)) { Warning($\"Column '{column.Name}' in table '{table.Name}' is missing a description.\"); } } }"
+    },
+    {
+        "ID": "Rule4",
+        "Name": "Enforce COUNT(VALUES()) Instead of DISTINCTCOUNT",
+        "Description": "Ensure DISTINCTCOUNT is replaced with COUNT(VALUES()) for better performance and readability.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { foreach (var measure in table.Measures) { if (measure.Expression.Contains(\"DISTINCTCOUNT\")) { Warning($\"Measure '{measure.Name}' in table '{table.Name}' uses DISTINCTCOUNT. Consider using COUNT(VALUES()).\"); } } }"
+    },
+    {
+        "ID": "Rule5",
+        "Name": "Validate Data Types",
+        "Description": "Ensure numeric columns do not contain text data.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { foreach (var column in table.Columns) { if (column.DataType == DataType.String && column.Name.Contains(\"Amount\")) { Warning($\"Column '{column.Name}' in table '{table.Name}' should be numeric.\"); } } }"
+    },
+    {
+        "ID": "Rule6",
+        "Name": "Check for Bi-Directional Relationships",
+        "Description": "Ensure relationships are single-directional unless absolutely necessary.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var relationship in Model.Relationships) { if (relationship.CrossFilteringBehavior == CrossFilteringBehavior.BothDirections) { Warning($\"Relationship between '{relationship.FromTable.Name}' and '{relationship.ToTable.Name}' is bi-directional. Use single-directional relationships unless necessary.\"); } }"
+    },
+    {
+        "ID": "Rule7",
+        "Name": "Validate Time Intelligence Functions",
+        "Description": "Ensure time intelligence functions use a proper date table.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "if (!Model.Tables.Any(t => t.Name == \"Date\" && t.IsDateTable)) { Warning(\"No date table marked as 'Date Table'. Time intelligence functions may not work correctly.\"); }"
+    },
+    {
+        "ID": "Rule8",
+        "Name": "Check for High-Cardinality Columns",
+        "Description": "Ensure high-cardinality columns are optimized.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { foreach (var column in table.Columns) { if (column.DataType == DataType.String && column.DistinctValues.Count > 10000) { Warning($\"Column '{column.Name}' in table '{table.Name}' has high cardinality. Consider optimizing.\"); } } }"
+    },
+    {
+        "ID": "Rule9",
+        "Name": "Validate Calculated Columns",
+        "Description": "Ensure calculated columns are used sparingly and only for static calculations.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { if (table.CalculatedColumns.Count > 5) { Warning($\"Table '{table.Name}' has more than 5 calculated columns. Consider using measures instead.\"); } }"
+    },
+    {
+        "ID": "Rule10",
+        "Name": "Check for Unused Columns",
+        "Description": "Ensure unused columns are removed from the model.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { foreach (var column in table.Columns) { if (!column.IsHidden && !column.UsedInRelationships && !column.UsedInMeasures && !column.UsedInCalculatedColumns) { Warning($\"Column '{column.Name}' in table '{table.Name}' is unused. Consider removing it.\"); } } }"
+    },
+    {
+        "ID": "Rule11",
+        "Name": "Check for Missing Hierarchies",
+        "Description": "Ensure hierarchies are created for drill-down functionality.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { if (table.Columns.Any(c => c.Name.Contains(\"Year\")) && !table.Hierarchies.Any()) { Warning($\"Table '{table.Name}' has date-related columns but no hierarchies. Consider creating hierarchies for drill-down functionality.\"); } }"
+    },
+    {
+        "ID": "Rule12",
+        "Name": "Validate Measure Formatting",
+        "Description": "Ensure measures have the correct format string.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { foreach (var measure in table.Measures) { if (measure.Name.Contains(\"Sales\") && measure.FormatString != \"Currency\") { Warning($\"Measure '{measure.Name}' in table '{table.Name}' should use the 'Currency' format.\"); } } }"
+    },
+    {
+        "ID": "Rule13",
+        "Name": "Check for Hidden Columns",
+        "Description": "Ensure columns not meant for end-users are hidden.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { foreach (var column in table.Columns) { if (column.Name.EndsWith(\"_ID\") && !column.IsHidden) { Warning($\"Column '{column.Name}' in table '{table.Name}' should be hidden.\"); } } }"
+    },
+    {
+        "ID": "Rule14",
+        "Name": "Validate Relationships",
+        "Description": "Ensure relationships are properly defined and active.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var relationship in Model.Relationships) { if (!relationship.IsActive) { Warning($\"Relationship between '{relationship.FromTable.Name}' and '{relationship.ToTable.Name}' is inactive. Ensure it is activated if needed.\"); } }"
+    },
+    {
+        "ID": "Rule15",
+        "Name": "Check for Large Tables",
+        "Description": "Ensure large tables are optimized or summarized.",
+        "Severity": "Warning",
+        "Scope": "Model",
+        "Expression": "foreach (var table in Model.Tables) { if (table.Columns.Count > 50 || table.Partitions.Sum(p => p.RowCount) > 1000000) { Warning($\"Table '{table.Name}' is large. Consider optimizing or summarizing the data.\"); } }"
+    }
+]
